@@ -9,7 +9,7 @@ import HowItWorks from "./HowItWorks";
 import SameButYou from "./SameButYou";
 import UnoCard from "./UnoCard";
 
-const PRICE = "R$ 18,90";
+const PRICE = "R$ 17,90";
 const PHOTO_TARGET = 12;
 
 interface FunnelData {
