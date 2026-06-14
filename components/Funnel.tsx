@@ -369,7 +369,7 @@ function UploadStep({
             ? `Continuar (${photos.length} foto${photos.length === 1 ? "" : "s"})`
             : "Continuar →"
         }
-        hint="Escolham sem stress! As fotos e o acabamento a gente acerta junto depois ❤️"
+        hint="Escolham sem stress! Dá pra trocar as fotos e ajustar o acabamento depois ❤️"
       />
     </div>
   );
@@ -702,7 +702,7 @@ function NavRow({
   return (
     <div className="mt-auto flex flex-col items-stretch gap-3 pt-10">
       {hint && (
-        <span className="mx-auto max-w-md text-center text-sm font-medium text-ink-soft">
+        <span className="mx-auto max-w-md rounded-2xl bg-blush/10 px-4 py-2.5 text-center text-[15px] font-semibold text-ink">
           {hint}
         </span>
       )}

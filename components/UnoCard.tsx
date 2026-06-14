@@ -54,7 +54,6 @@ export default function UnoCard({
   const baseStyle: CSSProperties = {
     aspectRatio: "810 / 1275",
     fontFamily: "var(--font-baloo)",
-    filter: "drop-shadow(0 16px 26px rgba(0,0,0,0.42))",
     ...style,
   };
 

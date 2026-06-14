@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { motion } from "motion/react";
 
 interface CardFanProps {
@@ -68,13 +69,19 @@ export default function CardFan({ images, maxCardWidth = 138 }: CardFanProps) {
               whileHover={{ y: -20, scale: 1.04 }}
               className="cursor-pointer"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={src}
-                alt=""
-                draggable={false}
-                className="block w-full rounded-[9px] drop-shadow-[0_14px_24px_rgba(0,0,0,0.4)]"
-              />
+              <div
+                className="relative w-full overflow-hidden rounded-[9px] shadow-[0_10px_20px_-6px_rgba(0,0,0,0.42)]"
+                style={{ aspectRatio: "1080 / 1680" }}
+              >
+                <Image
+                  src={src}
+                  alt=""
+                  fill
+                  sizes="(max-width: 640px) 33vw, 150px"
+                  className="object-cover"
+                  draggable={false}
+                />
+              </div>
             </motion.div>
           </div>
         );

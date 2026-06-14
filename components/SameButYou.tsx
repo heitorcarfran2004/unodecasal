@@ -32,7 +32,9 @@ function CompareCard({
       <img
         src={src}
         alt={label}
-        className={`w-[29vw] max-w-[185px] rounded-[12px] drop-shadow-[0_16px_26px_rgba(0,0,0,0.5)] sm:w-[158px] ${
+        loading="lazy"
+        decoding="async"
+        className={`w-[29vw] max-w-[185px] rounded-[12px] shadow-[0_12px_22px_-8px_rgba(0,0,0,0.5)] sm:w-[158px] ${
           highlight ? "lg:w-[194px]" : "lg:w-[167px]"
         }`}
       />
