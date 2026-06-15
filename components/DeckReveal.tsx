@@ -3,10 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import UnoCard from "./UnoCard";
-import { SHOWCASE_KEYS, UNIQUE_FACES, photoForIndex } from "@/lib/deck";
+import {
+  SHOWCASE_KEYS,
+  UNIQUE_FACES,
+  photoForCard,
+  type CardPhoto,
+} from "@/lib/deck";
 
 interface DeckRevealProps {
-  photos: string[];
+  photos: CardPhoto[];
   coupleName?: string;
   /** Go back to re-pick photos. */
   onRedo?: () => void;
@@ -67,7 +72,7 @@ export default function DeckReveal({ photos, coupleName, onRedo }: DeckRevealPro
           const fanRot = offset * 6;
           const jX = (i % 2 ? 1 : -1) * (1 + (i % 3));
           const jRot = (i % 2 ? -1 : 1) * (2 + (i % 4));
-          const photo = key === "back" ? undefined : photoForIndex(photos, i);
+          const photo = photoForCard(photos, key);
           const revealDelay = 0.06 * i;
 
           return (
@@ -92,7 +97,7 @@ export default function DeckReveal({ photos, coupleName, onRedo }: DeckRevealPro
               }
             >
               {/* front face (couple photo) — sits underneath */}
-              <UnoCard cardKey={key} photoUrl={photo} coupleName={coupleName} />
+              <UnoCard cardKey={key} photo={photo} coupleName={coupleName} />
               {/* back face on top, fades out to reveal the front */}
               <motion.div
                 className="absolute inset-0"
@@ -113,7 +118,7 @@ export default function DeckReveal({ photos, coupleName, onRedo }: DeckRevealPro
           onClick={() => setShowAll((s) => !s)}
           className="rounded-full bg-white/15 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-white/25"
         >
-          {showAll ? "Esconder as cartas" : "Ver todas as 108 cartas"}
+          {showAll ? "Esconder as cartas" : "Ver todas cartas personalizadas"}
         </button>
         {onRedo && (
           <button
@@ -131,12 +136,46 @@ export default function DeckReveal({ photos, coupleName, onRedo }: DeckRevealPro
           animate={{ opacity: 1, height: "auto" }}
           className="mt-6 grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-9"
         >
-          {UNIQUE_FACES.map((key, i) => (
-            <div key={key} className="card-lazy">
-              <UnoCard cardKey={key} photoUrl={photoForIndex(photos, i)} />
-            </div>
+          {UNIQUE_FACES.map((key) => (
+            <LazyCard key={key} cardKey={key} photo={photoForCard(photos, key)} />
           ))}
         </motion.div>
+      )}
+    </div>
+  );
+}
+
+/** Mounts the (heavy inline-SVG) card only when it nears the viewport. */
+function LazyCard({
+  cardKey,
+  photo,
+}: {
+  cardKey: string;
+  photo: CardPhoto | undefined;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setShow(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "350px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <div ref={ref} className="card-lazy">
+      {show ? (
+        <UnoCard cardKey={cardKey} photo={photo} />
+      ) : (
+        <div className="aspect-[810/1275] w-full rounded-[7%] bg-black/5" />
       )}
     </div>
   );

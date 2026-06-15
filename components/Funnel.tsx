@@ -2,18 +2,20 @@
 
 import { useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import AdjustStep from "./AdjustStep";
 import CardFan from "./CardFan";
 import DeckReveal from "./DeckReveal";
 import FinalCta from "./FinalCta";
 import HowItWorks from "./HowItWorks";
 import SameButYou from "./SameButYou";
 import UnoCard from "./UnoCard";
+import { makePhoto, PHOTO_SLOTS, type CardPhoto } from "@/lib/deck";
 
 const PRICE = "R$ 17,90";
-const PHOTO_TARGET = 12;
+const PHOTO_TARGET = PHOTO_SLOTS;
 
 interface FunnelData {
-  photos: string[];
+  photos: CardPhoto[];
   name1: string;
   name2: string;
   contactName: string;
@@ -30,7 +32,7 @@ const EMPTY: FunnelData = {
   email: "",
 };
 
-const STEPS = ["Apresentação", "Suas fotos", "O casal", "Seu UNO"];
+const STEPS = ["Apresentação", "Suas fotos", "Ajustar", "O casal", "Seu UNO"];
 
 export default function Funnel() {
   const [step, setStep] = useState(0);
@@ -64,23 +66,37 @@ export default function Funnel() {
           <StepShell key="upload">
             <UploadStep
               photos={data.photos}
-              onChange={(photos) => patch({ photos })}
+              onChange={(updater) =>
+                setData((d) => ({ ...d, photos: updater(d.photos) }))
+              }
               onBack={() => go(0)}
               onNext={() => go(2)}
             />
           </StepShell>
         )}
         {step === 2 && (
-          <StepShell key="couple">
-            <CoupleStep
-              data={data}
-              patch={patch}
+          <StepShell key="adjust">
+            <AdjustStep
+              photos={data.photos}
+              onChange={(updater) =>
+                setData((d) => ({ ...d, photos: updater(d.photos) }))
+              }
               onBack={() => go(1)}
               onNext={() => go(3)}
             />
           </StepShell>
         )}
         {step === 3 && (
+          <StepShell key="couple">
+            <CoupleStep
+              data={data}
+              patch={patch}
+              onBack={() => go(2)}
+              onNext={() => go(4)}
+            />
+          </StepShell>
+        )}
+        {step === 4 && (
           <StepShell key="preview">
             <PreviewStep
               photos={data.photos}
@@ -268,8 +284,8 @@ function UploadStep({
   onBack,
   onNext,
 }: {
-  photos: string[];
-  onChange: (p: string[]) => void;
+  photos: CardPhoto[];
+  onChange: (updater: (prev: CardPhoto[]) => CardPhoto[]) => void;
   onBack: () => void;
   onNext: () => void;
 }) {
@@ -277,14 +293,25 @@ function UploadStep({
 
   const addFiles = (files: FileList | null) => {
     if (!files) return;
-    const urls = Array.from(files)
+    Array.from(files)
       .filter((f) => f.type.startsWith("image/"))
-      .map((f) => URL.createObjectURL(f));
-    onChange([...photos, ...urls].slice(0, PHOTO_TARGET));
+      .forEach((f) => {
+        const url = URL.createObjectURL(f);
+        const img = new window.Image();
+        img.onload = () => {
+          const aspect = img.naturalWidth / img.naturalHeight;
+          onChange((prev) =>
+            prev.length >= PHOTO_TARGET
+              ? prev
+              : [...prev, makePhoto(url, aspect)],
+          );
+        };
+        img.src = url;
+      });
   };
 
   const removeAt = (i: number) =>
-    onChange(photos.filter((_, idx) => idx !== i));
+    onChange((prev) => prev.filter((_, idx) => idx !== i));
 
   const slots = Array.from({ length: PHOTO_TARGET });
 
@@ -292,8 +319,8 @@ function UploadStep({
     <div className="flex flex-1 flex-col">
       <Header
         kicker="Etapa 1 de 3"
-        title="Escolham 12 fotos de vocês"
-        subtitle="Fotos juntinhos funcionam lindas no oval da carta. Pode ser selfie, viagem, rolê — vão entrando uma em cada carta."
+        title="Escolham 15 fotos de vocês"
+        subtitle="Cada foto vira um tipo de carta e aparece nas 4 cores — como no UNO, mas distinguindo pelas fotos de vocês. Selfie, viagem, rolê: pode caprichar!"
       />
 
       <input
@@ -307,8 +334,8 @@ function UploadStep({
 
       <div className="mt-8 grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
         {slots.map((_, i) => {
-          const url = photos[i];
-          if (url)
+          const photo = photos[i];
+          if (photo)
             return (
               <motion.div
                 key={i}
@@ -319,7 +346,7 @@ function UploadStep({
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={url}
+                  src={photo.url}
                   alt={`Foto ${i + 1}`}
                   className="h-full w-full object-cover"
                 />
@@ -397,7 +424,7 @@ function CoupleStep({
   return (
     <div className="flex flex-1 flex-col">
       <Header
-        kicker="Etapa 2 de 3"
+        kicker="Etapa 3 de 3"
         title="Quem é o casal?"
         subtitle="Os nomes entram no verso das cartas. O contato é só pra te enviar o UNO pronto."
       />
@@ -480,7 +507,7 @@ function PreviewStep({
   coupleName,
   onRedo,
 }: {
-  photos: string[];
+  photos: CardPhoto[];
   coupleName: string;
   onRedo: () => void;
 }) {

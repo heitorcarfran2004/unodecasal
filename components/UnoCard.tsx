@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useId, useState, type CSSProperties } from "react";
-import { compositeCard } from "@/lib/deck";
+import { compositeCard, type CardPhoto } from "@/lib/deck";
 
 const cache = new Map<string, string>();
 
 interface UnoCardProps {
   /** Deck key, e.g. "0-red", "skip-green", "wild4", "back". */
   cardKey: string;
-  photoUrl?: string;
+  photo?: CardPhoto;
   coupleName?: string;
   className?: string;
   style?: CSSProperties;
@@ -21,7 +21,7 @@ interface UnoCardProps {
  */
 export default function UnoCard({
   cardKey,
-  photoUrl,
+  photo,
   coupleName,
   className = "",
   style,
@@ -48,7 +48,7 @@ export default function UnoCard({
   }, [cardKey]);
 
   const svg = raw
-    ? compositeCard(raw, { key: cardKey, photoHref: photoUrl, coupleName, uid })
+    ? compositeCard(raw, { key: cardKey, photo, coupleName, uid })
     : null;
 
   const baseStyle: CSSProperties = {
