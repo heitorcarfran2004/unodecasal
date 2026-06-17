@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import UnoCard from "./UnoCard";
 import {
+  CARD_BODY,
   minZoom,
   photoDrawRect,
   slotCardKey,
@@ -11,7 +12,11 @@ import {
 } from "@/lib/deck";
 
 const VB_W = 810;
-const VB_H = 1275;
+const VB_H = 1268; // matches the card art's real viewBox height
+
+// Clip the photo to the card body (rounded rect), so it doesn't bleed past the
+// card edge into the art's transparent margin.
+const BODY_CLIP = `inset(${((CARD_BODY.y / VB_H) * 100).toFixed(2)}% ${(((VB_W - CARD_BODY.x - CARD_BODY.w) / VB_W) * 100).toFixed(2)}% ${(((VB_H - CARD_BODY.y - CARD_BODY.h) / VB_H) * 100).toFixed(2)}% ${((CARD_BODY.x / VB_W) * 100).toFixed(2)}% round ${((CARD_BODY.r / VB_W) * 100).toFixed(2)}%)`;
 
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 
@@ -167,29 +172,35 @@ function PhotoEditor({
           onPointerUp={onUp}
           onPointerCancel={onUp}
         >
-          {/* blurred fill behind, so the oval is never empty when zoomed out */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={photo.url}
-            alt=""
-            draggable={false}
-            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-            style={{ filter: "blur(7px)", transform: "scale(1.12)" }}
-          />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={photo.url}
-            alt=""
-            draggable={false}
-            style={{
-              position: "absolute",
-              left: `${(rect.dx / VB_W) * 100}%`,
-              top: `${(rect.dy / VB_H) * 100}%`,
-              width: `${(rect.dw / VB_W) * 100}%`,
-              height: `${(rect.dh / VB_H) * 100}%`,
-              maxWidth: "none",
-            }}
-          />
+          {/* photo layers clipped to the card body (no bleed past the edge) */}
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{ clipPath: BODY_CLIP }}
+          >
+            {/* blurred fill behind, so the oval is never empty when zoomed out */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={photo.url}
+              alt=""
+              draggable={false}
+              className="absolute inset-0 h-full w-full object-cover"
+              style={{ filter: "blur(7px)", transform: "scale(1.12)" }}
+            />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={photo.url}
+              alt=""
+              draggable={false}
+              style={{
+                position: "absolute",
+                left: `${(rect.dx / VB_W) * 100}%`,
+                top: `${(rect.dy / VB_H) * 100}%`,
+                width: `${(rect.dw / VB_W) * 100}%`,
+                height: `${(rect.dh / VB_H) * 100}%`,
+                maxWidth: "none",
+              }}
+            />
+          </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={`/cards/${cardKey}.svg`}

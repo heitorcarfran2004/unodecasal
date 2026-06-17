@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState, type CSSProperties } from "react";
+import { useEffect, useId, useMemo, useState, type CSSProperties } from "react";
 import { compositeCard, type CardPhoto } from "@/lib/deck";
 
 const cache = new Map<string, string>();
@@ -47,9 +47,11 @@ export default function UnoCard({
     };
   }, [cardKey]);
 
-  const svg = raw
-    ? compositeCard(raw, { key: cardKey, photo, coupleName, uid })
-    : null;
+  const svg = useMemo(
+    () =>
+      raw ? compositeCard(raw, { key: cardKey, photo, coupleName, uid }) : null,
+    [raw, cardKey, photo, coupleName, uid],
+  );
 
   const baseStyle: CSSProperties = {
     aspectRatio: "810 / 1275",

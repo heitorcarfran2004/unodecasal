@@ -132,13 +132,24 @@ export default function DeckReveal({ photos, coupleName, onRedo }: DeckRevealPro
 
       {showAll && (
         <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          className="mt-6 grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-9"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mt-6"
         >
-          {UNIQUE_FACES.map((key) => (
-            <LazyCard key={key} cardKey={key} photo={photoForCard(photos, key)} />
-          ))}
+          <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-9">
+            {UNIQUE_FACES.map((key) => (
+              <LazyCard
+                key={key}
+                cardKey={key}
+                photo={photoForCard(photos, key)}
+              />
+            ))}
+          </div>
+          <p className="mx-auto mt-5 max-w-md rounded-2xl bg-white/10 px-4 py-3 text-center text-sm leading-relaxed text-white/80">
+            ℹ️ Aqui você vê uma carta de cada. O baralho que entregamos vem
+            completo, com todas as 108 cartas do jogo, contendo algumas
+            repetidas como no UNO tradicional.
+          </p>
         </motion.div>
       )}
     </div>

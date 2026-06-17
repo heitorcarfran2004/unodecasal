@@ -11,7 +11,8 @@ import SameButYou from "./SameButYou";
 import UnoCard from "./UnoCard";
 import { makePhoto, PHOTO_SLOTS, type CardPhoto } from "@/lib/deck";
 
-const PRICE = "R$ 17,90";
+const PRICE = "R$ 14,90";
+const CHECKOUT_URL = "https://ggcheckout.app/checkout/v5/aG31v8hzDpUcsh7bxD74";
 const PHOTO_TARGET = PHOTO_SLOTS;
 
 interface FunnelData {
@@ -19,8 +20,7 @@ interface FunnelData {
   name1: string;
   name2: string;
   contactName: string;
-  whatsapp: string;
-  email: string;
+  boxColor: "red" | "black";
 }
 
 const EMPTY: FunnelData = {
@@ -28,8 +28,7 @@ const EMPTY: FunnelData = {
   name1: "",
   name2: "",
   contactName: "",
-  whatsapp: "",
-  email: "",
+  boxColor: "black",
 };
 
 const STEPS = ["Apresentação", "Suas fotos", "Ajustar", "O casal", "Seu UNO"];
@@ -300,10 +299,32 @@ function UploadStep({
         const img = new window.Image();
         img.onload = () => {
           const aspect = img.naturalWidth / img.naturalHeight;
-          onChange((prev) =>
-            prev.length >= PHOTO_TARGET
-              ? prev
-              : [...prev, makePhoto(url, aspect)],
+          // downscale huge phone photos (~12MP) so the cards decode fast
+          const MAX = 1200;
+          const s = Math.min(1, MAX / Math.max(img.naturalWidth, img.naturalHeight));
+          const cw = Math.max(1, Math.round(img.naturalWidth * s));
+          const ch = Math.max(1, Math.round(img.naturalHeight * s));
+          const canvas = document.createElement("canvas");
+          canvas.width = cw;
+          canvas.height = ch;
+          canvas.getContext("2d")?.drawImage(img, 0, 0, cw, ch);
+          const finish = (finalUrl: string) =>
+            onChange((prev) =>
+              prev.length >= PHOTO_TARGET
+                ? prev
+                : [...prev, makePhoto(finalUrl, aspect)],
+            );
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                URL.revokeObjectURL(url);
+                finish(URL.createObjectURL(blob));
+              } else {
+                finish(url);
+              }
+            },
+            "image/jpeg",
+            0.85,
           );
         };
         img.src = url;
@@ -416,17 +437,14 @@ function CoupleStep({
   onNext: () => void;
 }) {
   const ready =
-    data.name1.trim() &&
-    data.name2.trim() &&
-    data.contactName.trim() &&
-    (data.whatsapp.trim() || data.email.trim());
+    data.name1.trim() && data.name2.trim() && data.contactName.trim();
 
   return (
     <div className="flex flex-1 flex-col">
       <Header
         kicker="Etapa 3 de 3"
         title="Quem é o casal?"
-        subtitle="Os nomes entram no verso das cartas. O contato é só pra te enviar o UNO pronto."
+        subtitle="Os nomes entram no verso das cartas."
       />
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
@@ -451,24 +469,36 @@ function CoupleStep({
             onChange={(v) => patch({ contactName: v })}
             placeholder="Como te chamamos"
           />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field
-              label="WhatsApp"
-              value={data.whatsapp}
-              onChange={(v) => patch({ whatsapp: v })}
-              placeholder="(00) 90000-0000"
-            />
-            <Field
-              label="E-mail"
-              value={data.email}
-              onChange={(v) => patch({ email: v })}
-              placeholder="voce@email.com"
-            />
+          <div>
+            <span className="mb-1.5 block text-sm font-semibold text-ink">
+              Selecione a cor da caixa
+            </span>
+            <div className="grid grid-cols-2 gap-3">
+              {(
+                [
+                  ["red", "Vermelha", "#e01b24"],
+                  ["black", "Preta", "#18171c"],
+                ] as const
+              ).map(([val, label, hex]) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => patch({ boxColor: val })}
+                  className={`flex items-center justify-center gap-2 rounded-2xl border-2 px-4 py-3 text-sm font-bold text-ink transition ${
+                    data.boxColor === val
+                      ? "border-blush bg-blush/5"
+                      : "border-ink/15 hover:border-ink/30"
+                  }`}
+                >
+                  <span
+                    className="h-5 w-5 rounded-full ring-1 ring-black/10"
+                    style={{ background: hex }}
+                  />
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
-          <p className="text-xs text-ink-soft">
-            Pedimos o contato agora pra garantir que, mesmo que você feche a
-            página, a gente consiga te mandar o seu UNO. 💌
-          </p>
         </div>
 
         {/* live name preview on the wild card */}
@@ -494,7 +524,7 @@ function CoupleStep({
         onNext={onNext}
         nextDisabled={!ready}
         nextLabel="Ver o nosso UNO →"
-        hint={!ready ? "Preencha os nomes e um contato" : undefined}
+        hint={!ready ? "Preencha os nomes" : undefined}
       />
     </div>
   );
@@ -511,27 +541,14 @@ function PreviewStep({
   coupleName: string;
   onRedo: () => void;
 }) {
-  const [ordered, setOrdered] = useState(false);
-
   const buyButton = (label: string) => (
-    <button
-      onClick={() => setOrdered(true)}
+    <a
+      href={CHECKOUT_URL}
       className="group flex w-full items-center justify-center gap-2 rounded-full bg-uno-green py-4 text-base font-bold text-white shadow-[0_16px_34px_-12px_rgba(22,164,76,0.7)] transition hover:-translate-y-0.5 hover:brightness-110"
     >
       {label}
       <span className="transition group-hover:translate-x-1">→</span>
-    </button>
-  );
-
-  const orderedBox = (
-    <div className="rounded-2xl bg-uno-green/10 px-5 py-5 text-center">
-      <p className="font-display text-xl font-bold text-uno-green">
-        Pedido recebido! 🎉
-      </p>
-      <p className="mt-1 text-sm text-ink-soft">
-        (demo) — aqui entra o checkout do ggCheckout e a geração automática do PDF.
-      </p>
-    </div>
+    </a>
   );
 
   const gets = [
@@ -539,7 +556,7 @@ function PreviewStep({
     { hex: "var(--uno-yellow)", el: <><strong>Caixinha</strong> com os nomes de vocês no verso</> },
     { hex: "var(--uno-green)", el: <><strong>PDF em alta resolução</strong> (300 DPI), pronto pra imprimir</> },
     { hex: "var(--uno-blue)", el: <>Imprime <strong>em casa ou em qualquer gráfica</strong> — quantas vezes quiser</> },
-    { hex: "var(--uno-black)", el: <>Chega <strong>na hora</strong>, no seu e-mail e WhatsApp</> },
+    { hex: "var(--uno-black)", el: <><strong>Entrega imediata</strong> após o pagamento</> },
   ];
 
   const faqs: [string, string][] = [
@@ -602,7 +619,7 @@ function PreviewStep({
           {PRICE}
         </p>
 
-        <div className="mt-6">{ordered ? orderedBox : buyButton("Quero o nosso UNO")}</div>
+        <div className="mt-6">{buyButton("Adquira seu UNO")}</div>
 
         <div className="mt-4 flex items-center justify-center gap-4 text-xs font-medium text-ink-soft">
           <span>🔒 Compra segura</span>
@@ -637,7 +654,7 @@ function PreviewStep({
 
       {/* closing buy */}
       <div className="mx-auto mt-10 w-full max-w-lg">
-        {ordered ? orderedBox : buyButton("Quero o nosso UNO")}
+        {buyButton("Adquira seu UNO")}
       </div>
     </div>
   );
